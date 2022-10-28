@@ -171,22 +171,29 @@ counts = data.frame(GSM3690851_G01_htseq, GSM3690852_G03_htseq, GSM3690853_NG01_
                     GSM3690881_NS_G18_htseq, GSM3690882_NS_G19_htseq, GSM3690883_NS_G20_htseq, 
                     GSM3690884_NS_G21_htseq, GSM3690885_NS_NG18_htseq, GSM3690886_NS_NG19_htseq, 
                     GSM3690887_NS_NG20_htseq, GSM3690888_NS_NG21_htseq)
+View(counts)
+
+# Next we want to read in the data. Each sample counts are stored  in a seperate file into a count matrix
+# Getting the list of all count files
+file_list <- list.files(path = "../project/counts", full.names = T)
 
 # Extracting the GEO accession number for experiment identifier 
-accession = gsub('^,*../project/counts/\\s*|\\_*', '', file_list)
+accession.csv = read.csv(file.choose())
+accession <- accession.csv
+accession
 
 # Reading in the gene list from the first count file
-genes <- read.table(file_list[1], header = FALSE, sep = "\t") [,1]
+genes.csv <- read.csv(file.choose())
+genes.csv 
 
 # Reading in the counts from all the files
-counts <- do.call(cbind, lapply(file_list, function(fn)read.table(fn, header = FALSE, sep = "\t" [, 2]))
 colnames(counts) = accession
 counts = data.frame(SYMBOL = genes, counts)
-
+                  
 # Filter out the htseq stats
 counts = counts[!c(grepl("_no_feature", counts$SYMBOL)|
-                   grepl("_ambiguous", counts$SYMBOL)|
-                  grepl("_too_low_aqual", counts$SYMBOL)|
-                  grepl("_not_aligned", counts$SYMBOL)|
-                  grepl("_alignment_not_unique", counts$SYMBOL)),]
+              grepl("_ambiguous", counts$SYMBOL)|
+              grepl("_too_low_aqual", counts$SYMBOL)|
+              grepl("_not_aligned", counts$SYMBOL)|
+              grepl("_alignment_not_unique", counts$SYMBOL)),]
 tail(counts)
