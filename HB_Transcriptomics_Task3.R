@@ -1,49 +1,23 @@
 # DE Analysis of RNA-Seq data
 
 # Installing packages from CRAN repo
+install.packages('dplyr')
 install.packages('tidyverse')
-install.packages('reshape2')
-install.packages('dendextend')
+install.packages('GEOquery')
 
 # Installing packages from bioconductor repo
 if (!require("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
 BiocManager::install(version = "3.15")
-BiocManager::install("edgeR")
-BiocManager::install("DESeq2")
-BiocManager::install("limma")
-BiocManager::install("Biobase")
+BiocManager::install("GEOquery")
 
 # Load libraries
-library(edgeR)
-library(DESeq2)
-library(limma)
-library(Biobase)
-library(reshape2)
-library(dendextend)
-
-
-# LOADING DATA
-# Import the meta data from the paper
-SraRunTable.txt <- read.csv(file.choose())
-SraRunTable <- SraRunTable.txt
-SraRunTable
-
-# Cleaning the column names
-colnames(SraRunTable) = gsub("\\..exp.", " ", colnames(SraRunTable))
-
-# Swapping out "-" and "+" for "minus" and "plus" because it will throw errors otherwise
-SraRunTable$Cell_type = gsub("-", "_minus", SraRunTable$Cell_type)
-# The "+" is a special character and should be escaped with "\\"
-SraRunTable$Cell_type = gsub("\\+", "_plus", SraRunTable$Cell_type)
-head(SraRunTable)
-
-# Next we want to read in the data. Each sample counts are stored  in a seperate file into a count matrix
-# Getting the list of all count files
-file_list <- list.files(path = "../project/counts", full.names = T)
+library(dplyr)
+library(tidyverse)
+library(GEOquery)
+library(readr)
 
 # Importation of files
-library(readr)
 GSM3690851_G01_htseq <- read_csv("counts/GSM3690851_G01_htseq.csv", 
                                  col_names = FALSE)
 
@@ -173,27 +147,65 @@ counts = data.frame(GSM3690851_G01_htseq, GSM3690852_G03_htseq, GSM3690853_NG01_
                     GSM3690887_NS_NG20_htseq, GSM3690888_NS_NG21_htseq)
 View(counts)
 
-# Next we want to read in the data. Each sample counts are stored  in a seperate file into a count matrix
-# Getting the list of all count files
-file_list <- list.files(path = "../project/counts", full.names = T)
+# Delete gene names that existed severally
+dat = select(counts, -c(X1.1, X1.2, X1.3, X1.4, X1.5, X1.6, X1.7, X1.8, X1.9, X1.10,
+                        X1.11, X1.12, X1.13, X1.14, X1.15, X1.16, X1.17, X1.18, X1.19,
+                        X1.20, X1.21, X1.22, X1.23, X1.24, X1.25, X1.26, X1.27, X1.28,
+                        X1.29, X1.30, X1.31, X1.32, X1.33, X1.34, X1.35, X1.36, X1.37))
 
-# Extracting the GEO accession number for experiment identifier 
-accession.csv = read.csv(file.choose())
-accession <- accession.csv
-accession
+View(dat)
 
-# Reading in the gene list from the first count file
-genes.csv <- read.csv(file.choose())
-genes.csv 
+# Get meta data
+SraRunTable.txt <- read.csv(file.choose())
+SraRunTable <- SraRunTable.txt
+metadata <- SraRunTable
 
-# Reading in the counts from all the files
-colnames(counts) = accession
-counts = data.frame(SYMBOL = genes, counts)
-                  
+# Cleaning the column names
+colnames(metadata) = gsub("\\..exp.", " ", colnames(metadata))
+
+# Swapping out "-" and "+" for "minus" and "plus" because it will throw errors otherwise
+metadata$Cell_type = gsub("-", "_minus", metadata$Cell_type)
+# The "+" is a special character and should be escaped with "\\"
+metadata$Cell_type = gsub("\\+", "_plus", metadata$Cell_type)
+head(metadata)
+
+# Get the columns needed. NOTE that column 2 will only be needed in the future for merging.
+metadata.subset <- select(metadata, c(2,8,15,20,30))
+
+# Swapping out "-" and "+" for "minus" and "plus" because it will throw errors otherwise
+metadata.subset$Cell_type = gsub("-", "_minus", metadata.subset$Cell_type)
+
+# The "+" is a special character and should be escaped with "\\"
+metadata.subset$Cell_type = gsub("\\+", "_plus", metadata.subset$Cell_type)
+head(metadata.subset)
+
+# Lets perform addition operation on the datasets
+metadata.modified <- metadata %>%
+select(2,8,15,20,30)
+
+# Change column name to sample and Substitute "RNA-Seq" with "X2"
+colnames(metadata.modified) = gsub("Assay.Type", "samples", colnames(metadata.modified))
+metadata.modified$samples = gsub("RNA-Seq", "X2", metadata.modified$samples)
+head(metadata.modified)
+
+# Lets take a look at what our gene expression data looks like
+head(dat)
+
+# reshaping data we will exclude the gene column. We are calling our sample column "sample" and their values "FPKM"
+dat.long = dat %>%
+  dplyr::rename(gene = X1) %>%
+  gather(key = 'samples', value = 'FPKM', -gene)
+
 # Filter out the htseq stats
-counts = counts[!c(grepl("_no_feature", counts$SYMBOL)|
-              grepl("_ambiguous", counts$SYMBOL)|
-              grepl("_too_low_aqual", counts$SYMBOL)|
-              grepl("_not_aligned", counts$SYMBOL)|
-              grepl("_alignment_not_unique", counts$SYMBOL)),]
-tail(counts)
+dat.long = dat.long[!c(grepl("_no_feature", dat.long$gene)|
+                     grepl("_ambiguous", dat.long$gene)|
+                     grepl("_too_low_aqual", dat.long$gene)|
+                     grepl("_not_aligned", dat.long$gene)|
+                     grepl("_alignment_not_unique", dat.long$gene)),]
+
+
+# join dataframes = dat.long + metadata.modified
+dat.long = dat.long %>%
+  left_join(., metadata.modified, by = c("samples"))
+
+# Explore data
