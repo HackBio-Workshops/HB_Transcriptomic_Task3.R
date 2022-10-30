@@ -1,21 +1,23 @@
 # DE Analysis of RNA-Seq data
 
+# DE Analysis of RNA-Seq data
+
 # Installing packages from CRAN repo
 install.packages('dplyr')
 install.packages('tidyverse')
-install.packages('GEOquery')
 
 # Installing packages from bioconductor repo
 if (!require("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
 BiocManager::install(version = "3.15")
-BiocManager::install("GEOquery")
+BiocManager::install("DESeq2")
+BiocManager::install("airway")
 
 # Load libraries
 library(dplyr)
 library(tidyverse)
-library(GEOquery)
 library(readr)
+library(airway)
 
 # Importation of files
 GSM3690851_G01_htseq <- read_csv("counts/GSM3690851_G01_htseq.csv", 
@@ -207,5 +209,41 @@ dat.long = dat.long[!c(grepl("_no_feature", dat.long$gene)|
 # join dataframes = dat.long + metadata.modified
 dat.long = dat.long %>%
   left_join(., metadata.modified, by = c("samples"))
+View(dat.long)
 
-# Explore data
+
+
+######  DESeq2  #####
+
+# loading the library
+library(ggplot2)
+library(airway)
+library(DESeq2)
+
+condition <- factor(c("Fear Conditioned", "Fear Conditioned","Fear Conditioned","Fear Conditioned","Non Shock","Non Shock", "Non Shock"))
+
+coldata <- data.frame(row.names = colnames(dat.long), condition)
+
+dds <- DESeqDataSetFromMatrix(countData = dat.long,
+                              colData = coldata,
+                              design= ~ condition)
+dds
+
+# pre-filtering
+keep <- rowSums(counts(dds)) >= 10
+dds <- dds[keep,]
+dds
+
+# set the factor level
+dds$condition = relevel(dds$condition, ref = "Fear Conditioned")
+
+# Run DESeq2
+dds <- DESeq(dds)
+res <- results(dds)
+res
+
+# Explore results
+summary(res)
+
+# Visualization
+plotDispEsts(res)
