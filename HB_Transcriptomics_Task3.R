@@ -1,7 +1,5 @@
 # DE Analysis of RNA-Seq data
 
-# DE Analysis of RNA-Seq data
-
 # Installing packages from CRAN repo
 install.packages('dplyr')
 install.packages('tidyverse')
@@ -205,6 +203,8 @@ dat.long = dat.long[!c(grepl("_no_feature", dat.long$gene)|
                      grepl("_not_aligned", dat.long$gene)|
                      grepl("_alignment_not_unique", dat.long$gene)),]
 
+# Let us replace all NA values with 0
+dat.long[is.na(dat.long)] <- 0
 
 # join dataframes = dat.long + metadata.modified
 dat.long = dat.long %>%
@@ -220,18 +220,13 @@ library(ggplot2)
 library(airway)
 library(DESeq2)
 
+# Let us produce a new dataset with first column as our first row for "dat.long" dataset
+# This is to allow our DESeqDataSetFromMatrix to recognize it for volcano plotting
 condition <- factor(c("Fear Conditioned", "Fear Conditioned","Fear Conditioned","Fear Conditioned","Non Shock","Non Shock", "Non Shock"))
-
 coldata <- data.frame(row.names = colnames(dat.long), condition)
-
 dds <- DESeqDataSetFromMatrix(countData = dat.long,
                               colData = coldata,
                               design= ~ condition)
-dds
-
-# pre-filtering
-keep <- rowSums(counts(dds)) >= 10
-dds <- dds[keep,]
 dds
 
 # set the factor level
