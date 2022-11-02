@@ -1,4 +1,4 @@
-# DE Analysis of RNA-Seq data
+# Differential Expression Analysis of RNA-Seq data
 
 # Installing packages from CRAN repo
 install.packages('dplyr')
