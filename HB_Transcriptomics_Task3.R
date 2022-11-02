@@ -210,35 +210,3 @@ dat.long[is.na(dat.long)] <- 0
 dat.long = dat.long %>%
   left_join(., metadata.modified, by = c("samples"))
 View(dat.long)
-
-
-
-######  DESeq2  #####
-
-# loading the library
-library(ggplot2)
-library(airway)
-library(DESeq2)
-
-# Let us produce a new dataset with first column as our first row for "dat.long" dataset
-# This is to allow our DESeqDataSetFromMatrix to recognize it for volcano plotting
-condition <- factor(c("Fear Conditioned", "Fear Conditioned","Fear Conditioned","Fear Conditioned","Non Shock","Non Shock", "Non Shock"))
-coldata <- data.frame(row.names = colnames(dat.long), condition)
-dds <- DESeqDataSetFromMatrix(countData = dat.long,
-                              colData = coldata,
-                              design= ~ condition)
-dds
-
-# set the factor level
-dds$condition = relevel(dds$condition, ref = "Fear Conditioned")
-
-# Run DESeq2
-dds <- DESeq(dds)
-res <- results(dds)
-res
-
-# Explore results
-summary(res)
-
-# Visualization
-plotDispEsts(res)
