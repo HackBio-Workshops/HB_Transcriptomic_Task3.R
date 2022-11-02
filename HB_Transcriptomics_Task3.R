@@ -8,14 +8,11 @@ install.packages('tidyverse')
 if (!require("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
 BiocManager::install(version = "3.15")
-BiocManager::install("DESeq2")
-BiocManager::install("airway")
 
 # Load libraries
 library(dplyr)
 library(tidyverse)
 library(readr)
-library(airway)
 
 # Importation of files
 GSM3690851_G01_htseq <- read_csv("counts/GSM3690851_G01_htseq.csv", 
