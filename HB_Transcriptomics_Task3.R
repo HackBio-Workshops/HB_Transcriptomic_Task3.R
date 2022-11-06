@@ -207,3 +207,23 @@ dat.long[is.na(dat.long)] <- 0
 dat.long = dat.long %>%
   left_join(., metadata.modified, by = c("samples"))
 View(dat.long)
+
+
+#######################VISUALIZATION#####################################
+
+# loading the library
+library(ggplot2)
+# 1. Bar plot
+dat.long %>%
+  filter(FPKM >= 50) %>%
+  filter(!is.na(Treatment)) %>%
+  ggplot(., aes(x = Treatment, y = FPKM, fill = Mouse_ID)) +
+  geom_col()
+
+# 2. Density plot
+dat.long %>%
+  filter(FPKM >= 50) %>%
+  filter(!is.na(Treatment)) %>%
+  ggplot(., aes(x = Cell_type, fill = Treatment)) +
+  geom_density(alpha = 0.3)
+
