@@ -227,3 +227,17 @@ dat.long %>%
   ggplot(., aes(x = Cell_type, fill = Treatment)) +
   geom_density(alpha = 0.3)
 
+# 3. Heat map
+mouse.of.interest <- c("MouseNr 01","MouseNr 02","MouseNr 03","MouseNr 04",
+                       "MouseNr 05","MouseNr 06","MouseNr 07","MouseNr 08",
+                       "MouseNr 09","MouseNr 10","MouseNr 11","MouseNr 12",
+                       "MouseNr 13","MouseNr 14","MouseNr 15","MouseNr 16",
+                       "MouseNr 17","MouseNr 18","MouseNr 19","MouseNr 20",
+                       "MouseNr 21")
+dat.long %>%
+  filter(Mouse_ID%in%mouse.of.interest) %>%
+  filter(FPKM >= 50) %>%
+  filter(!is.na(Mouse_ID)) %>%
+  ggplot(., aes(x = Treatment, y = Mouse_ID, fill = FPKM)) +
+  geom_tile()
+
